@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flash_chat/constants.dart';
+import 'package:flash_chat/screens/chat_screen.dart';
 import 'package:flash_chat/widgets/flashchat_button.dart';
 import 'package:flutter/material.dart';
 
@@ -12,9 +13,31 @@ class RegistrationScreen extends StatefulWidget {
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
-  FirebaseAuth auth = FirebaseAuth.instance;
+  // FirebaseAuth auth = FirebaseAuth.instance;
   final email = TextEditingController();
   final password = TextEditingController();
+
+  Future<void> register(String email, String password) async {
+    try {
+      await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        debugPrint('The password provided is too weak.');
+      } else if (e.code == 'email-already-in-use') {
+        debugPrint('The account already exists for that email.');
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
+
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +62,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             TextField(
                 controller: email,
                 decoration:
-                    kInputDecoration.copyWith(labelText: 'Enter your email')),
+                    kInputDecoration.copyWith(labelText: 'Enter your email'),
+                keyboardType: TextInputType.emailAddress),
             const SizedBox(
               height: 8.0,
             ),
             TextField(
                 controller: password,
+                obscureText: true,
                 decoration: kInputDecoration.copyWith(
                     labelText: 'Enter your password')),
             const SizedBox(
@@ -53,6 +78,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             FlashChatButton(
                 text: 'Register',
                 onTap: () {
+                  if (email.text.isEmpty || password.text.isEmpty) {
+                    debugPrint('Please input the required fields');
+                  } else {
+                    register(email.text, password.text);
+                    Navigator.pushNamed(context, ChatScreen.id);
+                  }
+
                   debugPrint(email.text + password.text);
                 },
                 color: Colors.blueAccent)
