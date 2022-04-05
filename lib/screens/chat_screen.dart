@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat/constants.dart';
 
+var currentUser = FirebaseAuth.instance.currentUser;
+
 class ChatScreen extends StatefulWidget {
   static const String id = 'chat_screen';
   const ChatScreen({Key? key}) : super(key: key);
@@ -12,7 +14,6 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  var currentUser = FirebaseAuth.instance.currentUser;
   String? messageText;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   final sendMessageController = TextEditingController();
@@ -75,12 +76,18 @@ class _ChatScreenState extends State<ChatScreen> {
                       final messageText = element['text'];
                       final messageSender = element['sender'];
 
+                      final userCurrent = currentUser!.email;
+
                       final messageBubble = MessageBubble(
-                          sender: messageSender, text: messageText);
+                        sender: messageSender,
+                        text: messageText,
+                        isMe: userCurrent == messageSender,
+                      );
                       listMessageBubbles.add(messageBubble);
                     }
                     return Expanded(
                       child: ListView(
+                        reverse: true,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 20),
                         children: listMessageBubbles,
@@ -135,8 +142,10 @@ class _ChatScreenState extends State<ChatScreen> {
 class MessageBubble extends StatelessWidget {
   final String sender;
   final String text;
+  final bool? isMe;
 
-  const MessageBubble({Key? key, required this.sender, required this.text})
+  const MessageBubble(
+      {Key? key, required this.sender, required this.text, this.isMe})
       : super(key: key);
 
   @override
@@ -144,20 +153,31 @@ class MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment:
+            isMe! ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Text(
             sender,
             style: TextStyle(fontSize: 12.0, color: Colors.black54),
           ),
           Material(
-            borderRadius: BorderRadius.circular(30.0),
+            borderRadius: isMe!
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(30.0),
+                    bottomLeft: Radius.circular(30.0),
+                    bottomRight: Radius.circular(30.0))
+                : const BorderRadius.only(
+                    topRight: Radius.circular(30.0),
+                    bottomLeft: Radius.circular(30.0),
+                    bottomRight: Radius.circular(30.0)),
             elevation: 5.0,
-            color: Colors.lightBlueAccent,
+            color: isMe! ? Colors.lightBlueAccent : Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(text,
-                  style: TextStyle(color: Colors.white, fontSize: 15)),
+                  style: TextStyle(
+                      color: isMe! ? Colors.white : Colors.black,
+                      fontSize: 15)),
 
               // Text('$text from $sender',
               //     style: TextStyle(color: Colors.white, fontSize: 15)),
